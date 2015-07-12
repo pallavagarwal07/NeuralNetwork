@@ -1,14 +1,24 @@
 #!/usr/bin/env python2
 import sys
+import numpy as np
 from time import sleep, clock, time
 from PyQt4 import QtGui, QtCore
-
+GUI = []
 gameField = []
 
 for i in range(0, 20):
     gameField.append([0]*20)
+gameField[18][2] = 1
+gameField[19][2] = 1
+gameField[16][15] = 1
+gameField[14][10] = 1
 
-print gameField
+ePos = 500
+eVel = 400
+
+robot = []
+sgn = []
+scores = []
 
 class redrawWindow(QtCore.QObject):
     rdw = QtCore.pyqtSignal()
@@ -18,8 +28,8 @@ class Worker(QtCore.QThread):
         QtCore.QThread.__init__(self)
 
     def run(self):
-        for i in range(0, 100000):
-            sleep(0.02)
+        while True:
+            sleep(0.015)
             sgn.rdw.emit()
 
 class player:
@@ -29,7 +39,7 @@ class player:
         self.handsUp = True
         self.jump = False
         self.last = clock()*28
-        self.vel = (0, -970)
+        self.vel = (0, 0)
         self.grvt = (0, 1170)
 
     def getDim(self):
@@ -45,7 +55,6 @@ class player:
         y1 = self.pos[1] - (75 if self.handsUp else 45)
         y2 = self.pos[1] + (75 if self.legsDown else 40)
         if not float(y2 - y1) - float(dim[1]) < 10e-6:
-            print y2-y1, dim[1]
             exit(0)
         return (x1, y1, x2, y2)
 
@@ -56,9 +65,36 @@ class player:
         p = self.pos
         v = self.vel
         self.pos = p[0]+v[0]*t, p[1]+v[1]*t
-        self.vel = v[0]+self.grvt[0]*t, v[1]+self.grvt[1]*t
-        print self.vel
+        global ePos
+        ePos = ePos - t*eVel
+        ePosLoc = (ePos + 80000000)%800
         d = self.getDim()
+        b = self.getBox()
+
+        # Loop over Barriers
+        for i in range(0, 20):
+            for j in range(0, 20):
+                y = i*40
+                x = (ePosLoc + j*40)%800
+                if y == 0 and x >= 0 and x < 40:
+                    start = j
+                if gameField[i][j]:
+                    qp.fillRect(x, y, 40, 40, QtCore.Qt.SolidPattern)
+                    if x > b[0] and x < b[2] and y > b[1] and y < b[3] or ePos < -8000:
+                        scores.append(( ePos, 1/(1+ np.exp(-ePos/1000)) ))
+                        GUI.worker.exit()
+                        GUI.close()
+
+        input = []
+        for i in range(0, 20):
+            for j in range(start, 20):
+                input.append(gameField[i][j])
+            for j in range(0, start):
+                input.append(gameField[i][j])
+        input = [input]
+        [[self.legsDown, self.handsUp, self.jump]] =  robot.Run(input)
+        self.vel = v[0]+self.grvt[0]*t, v[1]+self.grvt[1]*t
+
         if self.getBox()[3] > 800:
             self.vel = self.vel[0], 0
             if self.legsDown:
@@ -66,7 +102,7 @@ class player:
             else:
                 self.pos = self.pos[0], 760
         if self.getBox()[3] == 800 and self.jump == True:
-            self.vel = (0, -970)
+            self.vel = (0, -770)
 
 
 
@@ -97,7 +133,7 @@ class Window(QtGui.QMainWindow):
         super(Window, self).__init__()
         self.setGeometry(2, 50, 950, 800)
         self.setFixedSize(950, 800)
-        self.setWindowTitle("Yes!!")
+        self.setWindowTitle("Jump! Mafia Jump!")
         self.mafia = player()
         self.up = False
         self.down = False
@@ -130,13 +166,13 @@ class Window(QtGui.QMainWindow):
         qp.setPen(QtGui.QColor(167,34,54))
         self.drawCharacter(qp, self.mafia)
 
-        if self.left:
+        if self.mafia.legsDown:
             qp.fillRect(800, 60, 40, 40, QtCore.Qt.SolidPattern)
         if self.down:
             qp.fillRect(850, 60, 40, 40, QtCore.Qt.SolidPattern)
-        if self.right:
+        if self.mafia.handsUp:
             qp.fillRect(900, 60, 40, 40, QtCore.Qt.SolidPattern)
-        if self.up:
+        if self.mafia.jump:
             qp.fillRect(850, 10, 40, 40, QtCore.Qt.SolidPattern)
         self.num += 1
 
@@ -145,6 +181,8 @@ class Window(QtGui.QMainWindow):
             return
         if e.key() == QtCore.Qt.Key_Escape:
             self.worker.exit()
+            scores.append(ePos)
+            print scores
             self.close()
         if e.key() == QtCore.Qt.Key_Up:
             self.up = True
@@ -178,6 +216,7 @@ class Window(QtGui.QMainWindow):
 
 if __name__ == '__main__':
     app = QtGui.QApplication([])
+    scores = []
     sgn = redrawWindow()
     GUI = Window()
 
