@@ -2,6 +2,7 @@
 from PyQt4 import QtGui, QtCore
 import numpy as np
 import Game
+import time
 
 class Network(object):
     # Class methods
@@ -20,15 +21,6 @@ class Network(object):
                 self.weights.append(np.random.normal(scale=1, size=(l2, l1+1)))
         else:
             self.weights = weights
-
-    #def __init__(self, layerSize, weights):
-        #self.layerCount = len(layerSize)
-        #self.shape = layerSize
-        #self.weights = []
-
-        ## i-o from last run
-        #self._layerInput = []
-        #self._layerOutput = []
 
     def Run(self, input):
         input = np.asarray(input)
@@ -61,16 +53,20 @@ class Network(object):
         return np.floor(x+0.5)
 
 def evalRobot(robot):
-    app = QtGui.QApplication([])
-    scores = []
-    Game.scores = scores
-    Game.robot = robot
-    Game.sgn = Game.redrawWindow()
-    Game.ePos = 500
-    GUI = Game.Window()
-    Game.GUI = GUI
-    k = app.exec_()
-    return scores[0]
+    #app = QtGui.QApplication([])
+    #scores = []
+    #print "Here"
+    #Game.scores = scores
+    #Game.robot = robot
+    #Game.ePos = 500
+    #Game.ptr = app
+    #GUI = Game.Window()
+    #GUI.show()
+    #Game.GUI = GUI
+    #k = app.exec_()
+    #return scores[0]
+    import PyGame
+    return PyGame.evalRobot(robot)
 
 
 if __name__ == '__main__':

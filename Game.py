@@ -8,6 +8,7 @@ gameField = []
 
 for i in range(0, 20):
     gameField.append([0]*20)
+
 gameField[18][2] = 1
 gameField[19][2] = 1
 gameField[16][15] = 1
@@ -15,22 +16,10 @@ gameField[14][10] = 1
 
 ePos = 500
 eVel = 400
-
+ptr = []
 robot = []
 sgn = []
 scores = []
-
-class redrawWindow(QtCore.QObject):
-    rdw = QtCore.pyqtSignal()
-
-class Worker(QtCore.QThread):
-    def __init__(self):
-        QtCore.QThread.__init__(self)
-
-    def run(self):
-        while True:
-            sleep(0.015)
-            sgn.rdw.emit()
 
 class player:
     def __init__(self, pos = (80, 700)):
@@ -58,6 +47,33 @@ class player:
             exit(0)
         return (x1, y1, x2, y2)
 
+
+    def ins((x, y), (x1, y1, x2, y2)):
+        if x>x1 and x<x2 and y<y1 and y>y2:
+            return True
+        return False
+
+
+    def chkOverlap((x1, y1, x2, y2), (p1, q1, p2, q2)):
+        if ins((x1, y1), (p1, q1, p2, q2)):
+            return True
+        if ins((x1, y2), (p1, q1, p2, q2)):
+            return True
+        if ins((x2, y1), (p1, q1, p2, q2)):
+            return True
+        if ins((x2, y2), (p1, q1, p2, q2)):
+            return True
+        if ins((p1, q1), (x1, y1, x2, y2)):
+            return True
+        if ins((p1, q2), (x1, y1, x2, y2)):
+            return True
+        if ins((p2, q1), (x1, y1, x2, y2)):
+            return True
+        if ins((p2, q2), (x1, y1, x2, y2)):
+            return True
+        return False
+
+
     def drawMe(self, qp):
         c = clock()*28
         t = c - self.last
@@ -81,9 +97,10 @@ class player:
                 if gameField[i][j]:
                     qp.fillRect(x, y, 40, 40, QtCore.Qt.SolidPattern)
                     if x > b[0] and x < b[2] and y > b[1] and y < b[3] or ePos < -8000:
-                        scores.append(( ePos, 1/(1+ np.exp(-ePos/1000)) ))
-                        GUI.worker.exit()
+                        scores.append((ePos, 1/(1+ np.exp(-ePos/1000))))
+                        GUI.flag = False
                         GUI.close()
+                        sys.exit(0)
 
         input = []
         for i in range(0, 20):
@@ -140,9 +157,13 @@ class Window(QtGui.QMainWindow):
         self.left = False
         self.right = False
         self.show()
-        self.worker = Worker()
-        sgn.rdw.connect(self.repaint)
-        self.worker.start()
+        self.flag = True
+        global GUI
+        GUI = self
+
+        while self.flag:
+            self.repaint()
+            sleep(0.01)
 
     def paintEvent(self, e):
         qp = QtGui.QPainter()
@@ -150,10 +171,6 @@ class Window(QtGui.QMainWindow):
         qp.drawLine(800, 0, 800, 800)
         self.drawGame(e, qp)
         qp.end()
-
-    def home(self):
-        for i in range(0, 1000):
-            self.repaint()
 
     def drawCharacter(self, qp, ch):
         dim = ch.getBox()
@@ -180,7 +197,6 @@ class Window(QtGui.QMainWindow):
         if e.isAutoRepeat():
             return
         if e.key() == QtCore.Qt.Key_Escape:
-            self.worker.exit()
             scores.append(ePos)
             print scores
             self.close()
@@ -219,6 +235,5 @@ if __name__ == '__main__':
     scores = []
     sgn = redrawWindow()
     GUI = Window()
-
     k = app.exec_()
     sys.exit(k)
