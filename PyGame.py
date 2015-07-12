@@ -12,7 +12,7 @@ white = (255, 255, 255)
 # Environment
 gameField = []
 for i in range(0, 20):
-    gameField.append([0]*20)
+    gameField.append([0]*200)
 
 speed = 0.07
 
@@ -78,12 +78,12 @@ def chkOverlap((x1, y1, x2, y2), (p1, q1, p2, q2)):
 
 def updateRobotInput(robot, brain, start):
     input = []
-
+    j = start
     for i in range(0, 20):
-        for j in range(start, 20):
+        for k in range(0, 20):
+            j = j % 200
             input.append(gameField[i][j])
-        for j in range(0, start):
-            input.append(gameField[i][j])
+            j += 1
 
     input = [input]
     [[robot.legsDown, robot.handsUp, robot.jump]] =  brain.Run(input)
@@ -115,23 +115,35 @@ def updatePos(robot):
 
 
 def drawEnvrt(robot, screen, d, brain):
-    eLoc = int(robot.ePos % 800)
+    eLoc = (-robot.ePos) % 8000
     b    = robot.getBox()
+    j    = int(eLoc/40)
+    st   = j*40 - eLoc
 
-    for i in range(0, 20):
-        for j in range(0, 20):
-            x = (j*40 + eLoc) % 800
+    for x in range(int(st), int(st + 800), 40):
+        for i in range(0, 20):
+            j = j % 200
             y = i*40
-
-            if y == 0 and x >= 0 and x < 40:
-                start = j
-
             if gameField[i][j]:
                 d.rect(screen, black, (x, y, 40, 40))
                 if chkOverlap((x, y, x+40, y+40), b) or robot.ePos < -8000:
                     return (1/(1+ np.exp(-robot.ePos/1000)))
+        j += 1
 
-    updateRobotInput(robot, brain, start)
+    #for i in range(0, 20):
+        #for j in range(0, 200):
+            #x = (j*40 + eLoc) % 800
+            #y = i*40
+
+            #if y == 0 and x >= 0 and x < 40:
+                #start = j
+
+            #if gameField[i][j]:
+                #d.rect(screen, black, (x, y, 40, 40))
+                #if chkOverlap((x, y, x+40, y+40), b) or robot.ePos < -8000:
+                    #return (1/(1+ np.exp(-robot.ePos/1000)))
+
+    updateRobotInput(robot, brain, int(eLoc/40))
 
 
 def drawCharacter(robot, screen, d, brain):

@@ -1,7 +1,6 @@
 #!/usr/bin/env python2
 from PyQt4 import QtGui, QtCore
 import numpy as np
-import Game
 import time
 
 class Network(object):

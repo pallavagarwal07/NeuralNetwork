@@ -1,5 +1,4 @@
 #!/usr/bin/env python2
-
 from deap import base, creator, tools, algorithms, gp
 import numpy as np
 import random
