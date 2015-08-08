@@ -15,11 +15,26 @@ for i in range(0, 20):
     gameField.append([0]*200)
 
 speed = 0.07
+ENV_SPEED = 400
 
-gameField[18][2]  = 0
-gameField[19][2]  = 1
-gameField[16][15] = 1
-gameField[14][12] = 1
+gameField[16][12]  = 1
+gameField[16][13]  = 1
+gameField[16][14]  = 1
+gameField[16][15]  = 1
+gameField[16][16]  = 1
+gameField[16][17]  = 1
+gameField[16][18]  = 1
+gameField[16][19]  = 1
+
+gameField[19][52]  = 1
+gameField[15][65] = 1
+gameField[14][62] = 1
+gameField[14][72] = 1
+gameField[13][80] = 1
+gameField[12][80] = 1
+gameField[18][94] = 1
+gameField[19][95] = 1
+gameField[18][96] = 1
 
 class Player:
     #
@@ -30,10 +45,12 @@ class Player:
         self.legsDown = True
         self.handsUp  = True
         self.jump     = False
+        self.move     = False
         self.vel      = (0, 0)
         self.grv      = (0, 1170)
         self.ePos     = 500
-        self.eVel     = 400
+        self.lastMove = 500
+        self.eVel     = 0
 
     def getDim(self):
         height = 85
@@ -45,7 +62,7 @@ class Player:
         dim = self.getDim()
         x1 = self.pos[0] - dim[0]/2
         x2 = self.pos[0] + dim[0]/2
-        y1 = self.pos[1] - (75 if self.handsUp else 45)
+        y1 = self.pos[1] - (75 if self.handsUp else 65)
         y2 = self.pos[1] + (75 if self.legsDown else 40)
         return (x1, y1, x2, y2)
 
@@ -86,7 +103,7 @@ def updateRobotInput(robot, brain, start):
             j += 1
 
     input = [input]
-    [[robot.legsDown, robot.handsUp, robot.jump]] =  brain.Run(input)
+    [[robot.legsDown, robot.handsUp, robot.jump, robot.move]] =  brain.Run(input)
 
 
 def updatePos(robot):
@@ -94,6 +111,9 @@ def updatePos(robot):
     p = robot.pos
     v = robot.vel
     g = robot.grv
+
+    robot.eVel     = ENV_SPEED  if robot.move else 0
+    robot.lastMove = robot.ePos if robot.move else robot.lastMove - ENV_SPEED*t
 
     robot.pos = p[0]+v[0]*t, p[1] + v[1]* t
     robot.vel = v[0]+g[0]*t, v[1] + g[1]* t
@@ -130,6 +150,9 @@ def drawEnvrt(robot, screen, d, brain):
                     return (1/(1+ np.exp(-robot.ePos/1000)))
         j += 1
 
+    if robot.lastMove - robot.ePos < -1000:
+        return (1/(1+ np.exp(-robot.ePos/1000)))
+
     #for i in range(0, 20):
         #for j in range(0, 200):
             #x = (j*40 + eLoc) % 800
@@ -153,15 +176,17 @@ def drawCharacter(robot, screen, d, brain):
     if k is not None:
         return k
 
-    p = [int(a) for a in robot.pos]
-    v = [int(a) for a in robot.vel]
+    p = [int(a) for a in robot.pos     ]
+    v = [int(a) for a in robot.vel     ]
+    b = [int(a) for a in robot.getBox()]
 
-    d.circle(screen, black, (p[0], p[1]-42), 22, 1)
-    d.line(screen, black, (p[0], p[1]-20), (p[0]   , p[1]+20))
-    d.line(screen, black, (p[0], p[1]+20), (p[0]-30, p[1]+40))
-    d.line(screen, black, (p[0], p[1]+20), (p[0]+30, p[1]+40))
-    d.line(screen, black, (p[0], p[1])   , (p[0]-35, p[1]-20))
-    d.line(screen, black, (p[0], p[1])   , (p[0]+35, p[1]-20))
+    d.circle (screen , black , (p[0] , p[1]-42) , 22        , 1       )
+    d.line   (screen , black , (p[0] , p[1]-20) , (p[0]     , p[1]+20))
+    d.line   (screen , black , (p[0] , p[1]+20) , (p[0]-30  , p[1]+40))
+    d.line   (screen , black , (p[0] , p[1]+20) , (p[0]+30  , p[1]+40))
+    d.line   (screen , black , (p[0] , p[1]   ) , (p[0]-35  , p[1]-20))
+    d.line   (screen , black , (p[0] , p[1]   ) , (p[0]+35  , p[1]-20))
+    d.rect   (screen , black , (b[0] , b[1], b[2]-b[0], b[3]-b[1]), 1 )
 
     if robot.legsDown:
         d.line(screen, black, (p[0]-30, p[1]+40), (p[0]-35, p[1]+75))
@@ -191,7 +216,7 @@ def evalRobot(obj):
     done = False
 
     # Network object
-    brain = Network((400, 20, 3), obj)
+    brain = Network((400, 20, 4), obj)
     robot = Player()
 
     while not done:
@@ -216,10 +241,16 @@ def evalRobot(obj):
                 robot.legsDown = True
 
             # Right Key
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_RIGHT:
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_DOWN:
                 robot.handsUp = False
-            if event.type == pygame.KEYUP and event.key == pygame.K_RIGHT:
+            if event.type == pygame.KEYUP and event.key == pygame.K_DOWN:
                 robot.handsUp = True
+
+            # Down Key
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_RIGHT:
+                robot.move = True
+            if event.type == pygame.KEYUP and event.key == pygame.K_RIGHT:
+                robot.move = False
 
             # Speedup keys
             global speed
@@ -233,7 +264,7 @@ def evalRobot(obj):
         if not robot.legsDown:
             d.rect(screen, black, (800, 60, 40, 40))
         if not robot.handsUp:
-            d.rect(screen, black, (900, 60, 40, 40))
+            d.rect(screen, black, (850, 60, 40, 40))
         if robot.jump:
             d.rect(screen, black, (850, 10, 40, 40))
 

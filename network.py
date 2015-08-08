@@ -52,18 +52,6 @@ class Network(object):
         return np.floor(x+0.5)
 
 def evalRobot(robot):
-    #app = QtGui.QApplication([])
-    #scores = []
-    #print "Here"
-    #Game.scores = scores
-    #Game.robot = robot
-    #Game.ePos = 500
-    #Game.ptr = app
-    #GUI = Game.Window()
-    #GUI.show()
-    #Game.GUI = GUI
-    #k = app.exec_()
-    #return scores[0]
     import PyGame
     return PyGame.evalRobot(robot)
 
@@ -71,7 +59,7 @@ def evalRobot(robot):
 if __name__ == '__main__':
     nets = []
     for i in range(0, 20):
-        robot = Network((400, 20, 3))
+        robot = Network((400, 20, 4))
         k = evalRobot(robot)
         nets.append(( robot.weights, k ))
         print k

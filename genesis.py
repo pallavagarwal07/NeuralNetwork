@@ -14,7 +14,7 @@ def evalObj(weights):
     return network.evalRobot(weights),
 
 def getNewInd():
-    return creator.Individual(network.Network((400,20,3)).weights)
+    return creator.Individual(network.Network((400,20,4)).weights)
 
 toolbox = base.Toolbox()
 toolbox.register("attr_bool", random.randint, 0, 1)
@@ -35,7 +35,7 @@ def main():
     stats.register("avg", np.mean)
     stats.register("min", np.min)
     stats.register("max", np.max)
-    pop, logbook = algorithms.eaSimple(pop, toolbox, cxpb=0.8, mutpb=0.1, halloffame=hof, ngen=60, stats=stats,  verbose=True)
+    pop, logbook = algorithms.eaSimple(pop, toolbox, cxpb=0.5, mutpb=0.1, halloffame=hof, ngen=60, stats=stats,  verbose=True)
     return pop, logbook, hof
 
 
